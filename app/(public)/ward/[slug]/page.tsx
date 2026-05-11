@@ -8,8 +8,30 @@ import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import type { Metadata } from "next";
 
-export const revalidate = 60; // refresh cached page every 60 seconds
+export const revalidate = 60;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const [org] = await db
+    .select({ name: organizations.name, logoUrl: organizations.logoUrl })
+    .from(organizations)
+    .where(eq(organizations.slug, slug));
+
+  if (!org) return {};
+
+  return {
+    title: `${org.name} — Announcements`,
+    ...(org.logoUrl && {
+      icons: { icon: org.logoUrl, apple: org.logoUrl },
+    }),
+  };
+}
 
 export default async function WardPage({
   params,
