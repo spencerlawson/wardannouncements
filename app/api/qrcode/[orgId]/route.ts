@@ -20,6 +20,14 @@ export async function GET(
   const [org] = await db.select().from(organizations).where(eq(organizations.id, orgId));
   if (!org) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  if (!session.user.isSuperAdmin) {
+    const { getUserRolesInOrg, canManageOrg } = await import("@/lib/permissions");
+    const roles = await getUserRolesInOrg(session.user.id, orgId);
+    if (!canManageOrg(roles, false)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
   const wardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/ward/${org.slug}`;
   const buffer = await generateQRCodeBuffer(wardUrl);
 
