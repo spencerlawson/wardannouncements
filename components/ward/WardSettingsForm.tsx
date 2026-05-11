@@ -111,7 +111,7 @@ export default function WardSettingsForm({ ward }: { ward: Organization }) {
         <Label>Timezone</Label>
         <Select value={timezone} onValueChange={(v) => v && setTimezone(v)}>
           <SelectTrigger>
-            <SelectValue />
+            {timezone.replace(/_/g, " ")}
           </SelectTrigger>
           <SelectContent>
             {TIMEZONES.map((tz) => (

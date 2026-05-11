@@ -99,7 +99,7 @@ export default function OrgForm({ org }: { org?: Organization }) {
           <Label>Type</Label>
           <Select value={type} onValueChange={(v) => v && setType(v as "ward" | "stake")}>
             <SelectTrigger>
-              <SelectValue />
+              {type === "ward" ? "Ward" : "Stake"}
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ward">Ward</SelectItem>
@@ -113,7 +113,7 @@ export default function OrgForm({ org }: { org?: Organization }) {
         <Label>Timezone</Label>
         <Select value={timezone} onValueChange={(v) => v && setTimezone(v)}>
           <SelectTrigger>
-            <SelectValue />
+            {timezone.replace(/_/g, " ")}
           </SelectTrigger>
           <SelectContent>
             {TIMEZONES.map((tz) => (

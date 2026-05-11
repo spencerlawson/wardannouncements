@@ -58,7 +58,7 @@ export default function AddUserForm({ organizationId }: { organizationId: string
         <Label>Role</Label>
         <Select value={role} onValueChange={(v) => v && setRole(v as typeof role)}>
           <SelectTrigger>
-            <SelectValue />
+            {role === "ward_leader" ? "Ward Leader" : "Announcement Poster"}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="announcement_poster">Announcement Poster</SelectItem>

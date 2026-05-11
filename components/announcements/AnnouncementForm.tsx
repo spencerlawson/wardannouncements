@@ -95,7 +95,7 @@ export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
           <Label>Ward</Label>
           <Select value={selectedOrgId} onValueChange={(v) => v && setSelectedOrgId(v)}>
             <SelectTrigger>
-              <SelectValue />
+              {orgs.find((o) => o.id === selectedOrgId)?.name ?? "Select ward"}
             </SelectTrigger>
             <SelectContent>
               {orgs.map((org) => (
