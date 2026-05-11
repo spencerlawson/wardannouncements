@@ -28,6 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       allowDangerousEmailAccountLinking: true,
     }),
     Resend({
+      apiKey: process.env.RESEND_API_KEY ?? process.env.AUTH_RESEND_KEY,
       from: process.env.EMAIL_FROM ?? "noreply@wardannouncements.com",
     }),
   ],
