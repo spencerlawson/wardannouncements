@@ -28,30 +28,50 @@ interface Attachment {
   fileSize: number;
 }
 
+async function uploadFile(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch("/api/upload", { method: "POST", body: formData });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? "Upload failed");
+  }
+  const { url } = await res.json();
+  return url;
+}
+
 export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
   const [selectedOrgId, setSelectedOrgId] = useState(orgs[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [displayStartDate, setDisplayStartDate] = useState("");
   const [displayEndDate, setDisplayEndDate] = useState("");
+  const [headerImageUrl, setHeaderImageUrl] = useState("");
+  const [uploadingHeader, setUploadingHeader] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const handleFileUpload = async (files: FileList | null) => {
+  const handleHeaderImageUpload = async (file: File | null) => {
+    if (!file) return;
+    setUploadingHeader(true);
+    try {
+      const url = await uploadFile(file);
+      setHeaderImageUrl(url);
+    } catch (err) {
+      toast.error((err as Error).message ?? "Upload failed");
+    } finally {
+      setUploadingHeader(false);
+    }
+  };
+
+  const handleAttachmentUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setUploading(true);
+    setUploadingAttachment(true);
     try {
       const uploaded: Attachment[] = [];
       for (const file of Array.from(files)) {
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await fetch("/api/upload", { method: "POST", body: formData });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error ?? "Upload failed");
-        }
-        const { url } = await res.json();
+        const url = await uploadFile(file);
         uploaded.push({
           fileUrl: url,
           fileName: file.name,
@@ -62,9 +82,9 @@ export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
       setAttachments((prev) => [...prev, ...uploaded]);
       toast.success(`${uploaded.length} file(s) uploaded`);
     } catch (err) {
-      toast.error((err as Error).message ?? "Upload failed. Please try again.");
+      toast.error((err as Error).message ?? "Upload failed");
     } finally {
-      setUploading(false);
+      setUploadingAttachment(false);
     }
   };
 
@@ -80,6 +100,7 @@ export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
           organizationId: selectedOrgId,
           title: title.trim(),
           body,
+          headerImageUrl: headerImageUrl || undefined,
           displayStartDate,
           displayEndDate,
           attachments,
@@ -147,34 +168,55 @@ export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
         </div>
       </div>
 
+      {/* Header Image */}
+      <div className="space-y-2">
+        <Label>Header Image</Label>
+        <p className="text-xs text-muted-foreground">Optional image displayed at the top of the announcement card</p>
+        {headerImageUrl ? (
+          <div className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={headerImageUrl}
+              alt="Header"
+              className="w-full h-40 object-cover rounded-lg border"
+            />
+            <button
+              type="button"
+              onClick={() => setHeaderImageUrl("")}
+              className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <label className="flex items-center justify-center gap-2 border-2 border-dashed rounded-lg h-28 cursor-pointer hover:bg-muted/40 transition-colors">
+            {uploadingHeader ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Upload header image</span>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleHeaderImageUpload(e.target.files?.[0] ?? null)}
+              disabled={uploadingHeader}
+            />
+          </label>
+        )}
+      </div>
+
+      {/* Attachments */}
       <div className="space-y-2">
         <Label>Attachments</Label>
-        <label className="flex items-center gap-3 border-2 border-dashed rounded-lg p-4 cursor-pointer hover:bg-muted/40 transition-colors">
-          {uploading ? (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : (
-            <Upload className="h-4 w-4 text-muted-foreground" />
-          )}
-          <span className="text-sm text-muted-foreground">
-            {uploading ? "Uploading…" : "Upload images or documents (PDF, Word)"}
-          </span>
-          <input
-            type="file"
-            multiple
-            accept="image/*,.pdf,.doc,.docx"
-            className="hidden"
-            onChange={(e) => handleFileUpload(e.target.files)}
-            disabled={uploading}
-          />
-        </label>
-
+        <p className="text-xs text-muted-foreground">PDFs, Word documents, or additional images</p>
         {attachments.length > 0 && (
           <div className="space-y-1.5">
             {attachments.map((att, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between text-sm p-2.5 bg-muted rounded-lg"
-              >
+              <div key={i} className="flex items-center justify-between text-sm p-2.5 bg-muted rounded-lg">
                 <div className="flex items-center gap-2 min-w-0">
                   {att.fileType === "image" ? (
                     <ImageIcon className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -194,6 +236,24 @@ export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
             ))}
           </div>
         )}
+        <label className="flex items-center gap-3 border-2 border-dashed rounded-lg p-4 cursor-pointer hover:bg-muted/40 transition-colors">
+          {uploadingAttachment ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : (
+            <Upload className="h-4 w-4 text-muted-foreground" />
+          )}
+          <span className="text-sm text-muted-foreground">
+            {uploadingAttachment ? "Uploading…" : "Upload files"}
+          </span>
+          <input
+            type="file"
+            multiple
+            accept="image/*,.pdf,.doc,.docx"
+            className="hidden"
+            onChange={(e) => handleAttachmentUpload(e.target.files)}
+            disabled={uploadingAttachment}
+          />
+        </label>
       </div>
 
       <div className="flex gap-3 pt-2 border-t">
@@ -201,7 +261,7 @@ export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
           type="button"
           variant="outline"
           onClick={() => handleSubmit(false)}
-          disabled={isPending || uploading}
+          disabled={isPending || uploadingHeader || uploadingAttachment}
         >
           {isPending && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
           Save as Draft
@@ -209,7 +269,7 @@ export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
         <Button
           type="button"
           onClick={() => handleSubmit(true)}
-          disabled={isPending || uploading}
+          disabled={isPending || uploadingHeader || uploadingAttachment}
         >
           {isPending && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
           Submit for Approval

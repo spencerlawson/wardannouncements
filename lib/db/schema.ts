@@ -122,6 +122,7 @@ export const announcements = pgTable("announcements", {
     .references(() => organizations.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   body: text("body").notNull().default(""),
+  headerImageUrl: text("header_image_url"),
   status: announcementStatusEnum("status").notNull().default("draft"),
   displayStartDate: date("display_start_date").notNull(),
   displayEndDate: date("display_end_date").notNull(),

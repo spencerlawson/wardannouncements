@@ -39,6 +39,7 @@ export default async function WardPage({
       id: announcements.id,
       title: announcements.title,
       body: announcements.body,
+      headerImageUrl: announcements.headerImageUrl,
       displayStartDate: announcements.displayStartDate,
       displayEndDate: announcements.displayEndDate,
     })
@@ -143,23 +144,18 @@ export default async function WardPage({
         ) : (
           <div className="space-y-6">
             {weekAnnouncements.map((announcement) => {
-              const images = (attsByAnnouncement[announcement.id] ?? []).filter(
-                (a) => a.fileType === "image"
-              );
-              const docs = (attsByAnnouncement[announcement.id] ?? []).filter(
-                (a) => a.fileType === "document"
-              );
+              const allAttachments = attsByAnnouncement[announcement.id] ?? [];
 
               return (
                 <article
                   key={announcement.id}
                   className="bg-white rounded-xl border shadow-sm overflow-hidden"
                 >
-                  {images[0] && (
+                  {announcement.headerImageUrl && (
                     <div className="relative aspect-video w-full">
                       <Image
-                        src={images[0].fileUrl}
-                        alt={images[0].fileName}
+                        src={announcement.headerImageUrl}
+                        alt={announcement.title}
                         fill
                         className="object-cover"
                       />
@@ -174,36 +170,18 @@ export default async function WardPage({
                       dangerouslySetInnerHTML={{ __html: announcement.body }}
                     />
 
-                    {images.length > 1 && (
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        {images.slice(1).map((img) => (
-                          <div
-                            key={img.id}
-                            className="relative aspect-video rounded-lg overflow-hidden"
-                          >
-                            <Image
-                              src={img.fileUrl}
-                              alt={img.fileName}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {docs.length > 0 && (
+                    {allAttachments.length > 0 && (
                       <div className="space-y-1.5 pt-3 border-t">
-                        {docs.map((doc) => (
+                        {allAttachments.map((att) => (
                           <a
-                            key={doc.id}
-                            href={doc.fileUrl}
+                            key={att.id}
+                            href={att.fileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-500 hover:underline"
                           >
                             <Paperclip className="h-4 w-4 shrink-0" />
-                            {doc.fileName}
+                            {att.fileName}
                           </a>
                         ))}
                       </div>

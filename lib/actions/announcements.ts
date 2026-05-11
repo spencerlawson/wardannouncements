@@ -31,6 +31,7 @@ export async function createAnnouncement({
   organizationId,
   title,
   body,
+  headerImageUrl,
   displayStartDate,
   displayEndDate,
   attachments: atts,
@@ -39,6 +40,7 @@ export async function createAnnouncement({
   organizationId: string;
   title: string;
   body: string;
+  headerImageUrl?: string;
   displayStartDate: string;
   displayEndDate: string;
   attachments: Attachment[];
@@ -51,7 +53,7 @@ export async function createAnnouncement({
 
   const [newAnn] = await db
     .insert(announcements)
-    .values({ organizationId, title, body, displayStartDate, displayEndDate, status, createdBy: session.user.id })
+    .values({ organizationId, title, body, headerImageUrl: headerImageUrl || null, displayStartDate, displayEndDate, status, createdBy: session.user.id })
     .returning();
 
   await db.insert(announcementHistory).values({
@@ -242,6 +244,7 @@ export async function updateAnnouncement({
   announcementId,
   title,
   body,
+  headerImageUrl,
   displayStartDate,
   displayEndDate,
   newAttachments,
@@ -251,6 +254,7 @@ export async function updateAnnouncement({
   announcementId: string;
   title: string;
   body: string;
+  headerImageUrl?: string;
   displayStartDate: string;
   displayEndDate: string;
   newAttachments: Attachment[];
@@ -276,7 +280,7 @@ export async function updateAnnouncement({
 
   await db
     .update(announcements)
-    .set({ title, body, displayStartDate, displayEndDate, status, updatedAt: new Date() })
+    .set({ title, body, headerImageUrl: headerImageUrl ?? null, displayStartDate, displayEndDate, status, updatedAt: new Date() })
     .where(eq(announcements.id, announcementId));
 
   await db.insert(announcementHistory).values({

@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import AnnouncementActions from "@/components/announcements/AnnouncementActions";
 import DeleteAnnouncementButton from "@/components/announcements/DeleteAnnouncementButton";
 import { Paperclip, Pencil } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -127,6 +128,13 @@ export default async function AnnouncementDetailPage({
         isOwner={isOwner}
         isLeader={isLeader}
       />
+
+      {/* Header image preview */}
+      {a.headerImageUrl && (
+        <div className="relative aspect-video w-full rounded-xl overflow-hidden border">
+          <Image src={a.headerImageUrl} alt={a.title} fill className="object-cover" />
+        </div>
+      )}
 
       {/* Body */}
       <div
