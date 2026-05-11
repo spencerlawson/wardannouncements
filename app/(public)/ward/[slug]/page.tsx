@@ -74,7 +74,7 @@ export default async function WardPage({
   }, {});
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       {/* Ward header */}
       <header style={{ backgroundColor: org.primaryColor }} className="text-white">
         {(org as any).bannerUrl && (
@@ -200,7 +200,7 @@ export default async function WardPage({
                             href={doc.fileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                            className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-500 hover:underline"
                           >
                             <Paperclip className="h-4 w-4 shrink-0" />
                             {doc.fileName}

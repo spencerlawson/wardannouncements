@@ -47,22 +47,22 @@ export default async function DashboardLayout({
     .slice(0, 2);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b bg-white sticky top-0 z-10">
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      <header className="border-b border-slate-200/60 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/dashboard" className="font-semibold text-lg">
+          <Link href="/dashboard" className="font-extrabold text-lg tracking-tight text-indigo-600">
             Ward Announcements
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-0.5">
             <Link href="/dashboard">
-              <Button variant="ghost" size="sm" className="gap-1.5">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
                 <LayoutDashboard className="h-4 w-4" />
                 Dashboard
               </Button>
             </Link>
             <Link href="/dashboard/announcements">
-              <Button variant="ghost" size="sm" className="gap-1.5">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
                 <Megaphone className="h-4 w-4" />
                 Announcements
               </Button>
@@ -70,13 +70,13 @@ export default async function DashboardLayout({
             {isLeader && (
               <>
                 <Link href="/dashboard/users">
-                  <Button variant="ghost" size="sm" className="gap-1.5">
+                  <Button variant="ghost" size="sm" className="gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
                     <Users className="h-4 w-4" />
                     Users
                   </Button>
                 </Link>
                 <Link href="/dashboard/settings">
-                  <Button variant="ghost" size="sm" className="gap-1.5">
+                  <Button variant="ghost" size="sm" className="gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
                     <Settings className="h-4 w-4" />
                     Settings
                   </Button>
@@ -85,7 +85,7 @@ export default async function DashboardLayout({
             )}
             {session.user.isSuperAdmin && (
               <Link href="/admin">
-                <Button variant="ghost" size="sm" className="gap-1.5 text-destructive">
+                <Button variant="ghost" size="sm" className="gap-1.5 text-destructive hover:bg-red-50">
                   <Shield className="h-4 w-4" />
                   Admin
                 </Button>
@@ -94,10 +94,10 @@ export default async function DashboardLayout({
           </nav>
 
           <DropdownMenu>
-            <DropdownMenuTrigger className="rounded-full focus:outline-none">
+            <DropdownMenuTrigger className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={session.user.image ?? undefined} />
-                <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                <AvatarFallback className="text-xs bg-indigo-100 text-indigo-700">{initials}</AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
