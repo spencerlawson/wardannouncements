@@ -112,13 +112,13 @@ export default async function WardPage({
             <div className="absolute inset-0 bg-black/30" />
           </div>
         )}
-        <div className="max-w-3xl mx-auto px-4 py-6 flex items-center gap-4">
+        <div className="max-w-3xl mx-auto px-4 py-2 flex items-center gap-4">
           {org.logoUrl && (
             <Image
               src={org.logoUrl}
               alt={`${org.name} logo`}
-              width={73}
-              height={73}
+              width={105}
+              height={105}
               className="rounded-full object-cover bg-white/20 shrink-0"
             />
           )}
