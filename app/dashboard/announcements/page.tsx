@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { userOrganizationRoles, announcements, users, organizations } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +57,7 @@ export default async function AnnouncementsPage() {
     .from(announcements)
     .innerJoin(organizations, eq(announcements.organizationId, organizations.id))
     .innerJoin(users, eq(announcements.createdBy, users.id))
-    .where(eq(userOrganizationRoles.organizationId, announcements.organizationId))
+    .where(inArray(announcements.organizationId, orgIds))
     .orderBy(desc(announcements.createdAt))
     .limit(100);
 
