@@ -10,12 +10,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Megaphone, Settings, Users, LayoutDashboard, Shield, ChevronDown } from "lucide-react";
-import { DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 
 export default async function DashboardLayout({
   children,
@@ -94,12 +95,14 @@ export default async function DashboardLayout({
                     <ChevronDown className="h-3 w-3 opacity-60" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Select ward</DropdownMenuLabel>
-                    {leaderOrgs.map((m) => (
-                      <DropdownMenuItem key={m.orgId} render={<Link href={`/dashboard/users?org=${m.orgId}`} />}>
-                        {m.orgName}
-                      </DropdownMenuItem>
-                    ))}
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>Select ward</DropdownMenuLabel>
+                      {leaderOrgs.map((m) => (
+                        <DropdownMenuItem key={m.orgId} render={<Link href={`/dashboard/users?org=${m.orgId}`} />}>
+                          {m.orgName}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <DropdownMenu>
@@ -109,12 +112,14 @@ export default async function DashboardLayout({
                     <ChevronDown className="h-3 w-3 opacity-60" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Select ward</DropdownMenuLabel>
-                    {leaderOrgs.map((m) => (
-                      <DropdownMenuItem key={m.orgId} render={<Link href={`/dashboard/settings?org=${m.orgId}`} />}>
-                        {m.orgName}
-                      </DropdownMenuItem>
-                    ))}
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>Select ward</DropdownMenuLabel>
+                      {leaderOrgs.map((m) => (
+                        <DropdownMenuItem key={m.orgId} render={<Link href={`/dashboard/settings?org=${m.orgId}`} />}>
+                          {m.orgName}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
