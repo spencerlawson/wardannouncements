@@ -29,7 +29,9 @@ export default function OrgSwitcher({ orgs, currentOrgId }: { orgs: Org[]; curre
   return (
     <Select value={currentOrgId} onValueChange={handleChange}>
       <SelectTrigger className="w-56">
-        <SelectValue />
+        <SelectValue>
+          {orgs.find((o) => o.id === currentOrgId)?.name ?? "Select ward"}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {orgs.map((org) => (
