@@ -40,8 +40,10 @@ async function uploadFile(file: File): Promise<string> {
   return url;
 }
 
-export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
-  const [selectedOrgId, setSelectedOrgId] = useState(orgs[0]?.id ?? "");
+export default function AnnouncementForm({ orgs, defaultOrgId }: { orgs: Org[]; defaultOrgId?: string }) {
+  const [selectedOrgId, setSelectedOrgId] = useState(
+    (defaultOrgId && orgs.some((o) => o.id === defaultOrgId) ? defaultOrgId : null) ?? orgs[0]?.id ?? ""
+  );
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [displayStartDate, setDisplayStartDate] = useState("");

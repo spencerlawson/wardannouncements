@@ -5,9 +5,15 @@ import { userOrganizationRoles, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import AnnouncementForm from "@/components/announcements/AnnouncementForm";
 
-export default async function NewAnnouncementPage() {
+export default async function NewAnnouncementPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ org?: string }>;
+}) {
   const session = await auth();
   if (!session?.user) redirect("/login");
+
+  const { org: orgParam } = await searchParams;
 
   const memberships = await db
     .select({
@@ -25,7 +31,7 @@ export default async function NewAnnouncementPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <h1 className="text-2xl font-semibold">New Announcement</h1>
-      <AnnouncementForm orgs={orgsForUser} />
+      <AnnouncementForm orgs={orgsForUser} defaultOrgId={orgParam} />
     </div>
   );
 }

@@ -2,13 +2,14 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { userOrganizationRoles, announcements, users, organizations } from "@/lib/db/schema";
-import { eq, desc, inArray } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Plus, Pencil } from "lucide-react";
 import DeleteAnnouncementButton from "@/components/announcements/DeleteAnnouncementButton";
+import OrgSwitcher from "@/components/OrgSwitcher";
 
 const statusColors: Record<string, string> = {
   draft: "secondary",
@@ -24,25 +25,35 @@ const statusLabels: Record<string, string> = {
   revision_requested: "Needs Revision",
 };
 
-export default async function AnnouncementsPage() {
+export default async function AnnouncementsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ org?: string }>;
+}) {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  // Get user's orgs
+  const { org: orgParam } = await searchParams;
+
+  // Get user's orgs with names for the switcher
   const memberships = await db
-    .select({ orgId: userOrganizationRoles.organizationId, role: userOrganizationRoles.role })
+    .select({ orgId: userOrganizationRoles.organizationId, role: userOrganizationRoles.role, orgName: organizations.name })
     .from(userOrganizationRoles)
+    .innerJoin(organizations, eq(userOrganizationRoles.organizationId, organizations.id))
     .where(eq(userOrganizationRoles.userId, session.user.id));
 
-  const orgIds = memberships.map((m) => m.orgId);
+  const allOrgs = memberships.map((m) => ({ id: m.orgId, name: m.orgName }));
+  const activeOrg =
+    (orgParam ? allOrgs.find((o) => o.id === orgParam) : undefined) ?? allOrgs[0];
+
   const isLeaderOf = new Set(
     memberships
       .filter((m) => m.role === "ward_leader" || m.role === "stake_leader")
       .map((m) => m.orgId)
   );
 
-  // Leaders see all org announcements; posters see only their own
-  const rows = orgIds.length === 0 ? [] : await db
+  // Fetch announcements for the active org only
+  const rows = !activeOrg ? [] : await db
     .select({
       id: announcements.id,
       title: announcements.title,
@@ -58,11 +69,11 @@ export default async function AnnouncementsPage() {
     .from(announcements)
     .innerJoin(organizations, eq(announcements.organizationId, organizations.id))
     .innerJoin(users, eq(announcements.createdBy, users.id))
-    .where(inArray(announcements.organizationId, orgIds))
+    .where(eq(announcements.organizationId, activeOrg.id))
     .orderBy(desc(announcements.createdAt))
     .limit(100);
 
-  // Filter: leaders see all in their orgs, posters see only own
+  // Leaders see all in their org; posters see only own
   const visible = rows.filter(
     (r) =>
       isLeaderOf.has(r.orgId) ||
@@ -79,9 +90,14 @@ export default async function AnnouncementsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Announcements</h1>
-        <Link href="/dashboard/announcements/new">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-2xl font-semibold">Announcements</h1>
+          {allOrgs.length > 1 && activeOrg && (
+            <OrgSwitcher orgs={allOrgs} currentOrgId={activeOrg.id} />
+          )}
+        </div>
+        <Link href={`/dashboard/announcements/new${activeOrg ? `?org=${activeOrg.id}` : ""}`}>
           <Button size="sm" className="gap-1.5">
             <Plus className="h-4 w-4" />
             New

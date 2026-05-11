@@ -7,11 +7,18 @@ import AddUserForm from "@/components/users/AddUserForm";
 import RemoveUserButton from "@/components/users/RemoveUserButton";
 import EditUserRoleSelect from "@/components/users/EditUserRoleSelect";
 import CSVUploadForm from "@/components/users/CSVUploadForm";
+import OrgSwitcher from "@/components/OrgSwitcher";
 import { Badge } from "@/components/ui/badge";
 
-export default async function UsersPage() {
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ org?: string }>;
+}) {
   const session = await auth();
   if (!session?.user) redirect("/login");
+
+  const { org: orgParam } = await searchParams;
 
   const memberships = await db
     .select({ role: userOrganizationRoles.role, org: organizations })
@@ -19,14 +26,19 @@ export default async function UsersPage() {
     .innerJoin(organizations, eq(userOrganizationRoles.organizationId, organizations.id))
     .where(eq(userOrganizationRoles.userId, session.user.id));
 
-  const leadership = memberships.find(
+  const leaderships = memberships.filter(
     (m) => m.role === "ward_leader" || m.role === "stake_leader"
   );
 
-  if (!leadership && !session.user.isSuperAdmin) redirect("/dashboard");
+  if (leaderships.length === 0 && !session.user.isSuperAdmin) redirect("/dashboard");
+
+  const leadership =
+    (orgParam ? leaderships.find((m) => m.org.id === orgParam) : undefined) ??
+    leaderships[0];
 
   const orgId = leadership?.org.id ?? "";
   const orgName = leadership?.org.name ?? "";
+  const leaderOrgs = leaderships.map((m) => ({ id: m.org.id, name: m.org.name }));
 
   const wardUsers = await db
     .select({
@@ -43,9 +55,14 @@ export default async function UsersPage() {
 
   return (
     <div className="max-w-2xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold">Ward Users</h1>
-        <p className="text-sm text-muted-foreground mt-1">{orgName} · {wardUsers.length} member{wardUsers.length !== 1 ? "s" : ""}</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-semibold">Ward Users</h1>
+          <p className="text-sm text-muted-foreground mt-1">{orgName} · {wardUsers.length} member{wardUsers.length !== 1 ? "s" : ""}</p>
+        </div>
+        {leaderOrgs.length > 1 && (
+          <OrgSwitcher orgs={leaderOrgs} currentOrgId={orgId} />
+        )}
       </div>
 
       {/* Member list */}

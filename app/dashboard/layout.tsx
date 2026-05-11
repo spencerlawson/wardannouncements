@@ -14,7 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Megaphone, Settings, Users, LayoutDashboard, Shield } from "lucide-react";
+import { Megaphone, Settings, Users, LayoutDashboard, Shield, ChevronDown } from "lucide-react";
+import { DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 
 export default async function DashboardLayout({
   children,
@@ -36,9 +37,10 @@ export default async function DashboardLayout({
     .innerJoin(organizations, eq(userOrganizationRoles.organizationId, organizations.id))
     .where(eq(userOrganizationRoles.userId, session.user.id));
 
-  const isLeader = memberships.some(
+  const leaderOrgs = memberships.filter(
     (m) => m.role === "ward_leader" || m.role === "stake_leader"
   );
+  const isLeader = leaderOrgs.length > 0;
   const initials = (session.user.name ?? session.user.email ?? "U")
     .split(" ")
     .map((w) => w[0])
@@ -67,20 +69,54 @@ export default async function DashboardLayout({
                 Announcements
               </Button>
             </Link>
-            {isLeader && (
+            {isLeader && leaderOrgs.length === 1 && (
               <>
-                <Link href="/dashboard/users">
+                <Link href={`/dashboard/users?org=${leaderOrgs[0].orgId}`}>
                   <Button variant="ghost" size="sm" className="gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
                     <Users className="h-4 w-4" />
                     Users
                   </Button>
                 </Link>
-                <Link href="/dashboard/settings">
+                <Link href={`/dashboard/settings?org=${leaderOrgs[0].orgId}`}>
                   <Button variant="ghost" size="sm" className="gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
                     <Settings className="h-4 w-4" />
                     Settings
                   </Button>
                 </Link>
+              </>
+            )}
+            {isLeader && leaderOrgs.length > 1 && (
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-md px-3 h-8 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none">
+                    <Users className="h-4 w-4" />
+                    Users
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Select ward</DropdownMenuLabel>
+                    {leaderOrgs.map((m) => (
+                      <DropdownMenuItem key={m.orgId}>
+                        <Link href={`/dashboard/users?org=${m.orgId}`} className="w-full">{m.orgName}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-md px-3 h-8 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none">
+                    <Settings className="h-4 w-4" />
+                    Settings
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Select ward</DropdownMenuLabel>
+                    {leaderOrgs.map((m) => (
+                      <DropdownMenuItem key={m.orgId}>
+                        <Link href={`/dashboard/settings?org=${m.orgId}`} className="w-full">{m.orgName}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
             {session.user.isSuperAdmin && (
