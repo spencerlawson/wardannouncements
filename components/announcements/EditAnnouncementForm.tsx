@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateAnnouncement } from "@/lib/actions/announcements";
-import { upload } from "@vercel/blob/client";
 import { toast } from "sonner";
 import { Loader2, Upload, X, FileText, ImageIcon } from "lucide-react";
 import type { Announcement, AnnouncementAttachment } from "@/lib/db/schema";
@@ -43,12 +42,13 @@ export default function EditAnnouncementForm({
     try {
       const uploaded: NewAttachment[] = [];
       for (const file of Array.from(files)) {
-        const result = await upload(file.name, file, {
-          access: "public",
-          handleUploadUrl: "/api/upload",
-        });
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        if (!res.ok) throw new Error("Upload failed");
+        const { url } = await res.json();
         uploaded.push({
-          fileUrl: result.url,
+          fileUrl: url,
           fileName: file.name,
           fileType: file.type.startsWith("image/") ? "image" : "document",
           fileSize: file.size,

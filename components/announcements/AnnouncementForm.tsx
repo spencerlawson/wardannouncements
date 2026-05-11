@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createAnnouncement } from "@/lib/actions/announcements";
-import { upload } from "@vercel/blob/client";
 import { toast } from "sonner";
 import { Loader2, Upload, X, FileText, ImageIcon } from "lucide-react";
 
@@ -45,12 +44,13 @@ export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
     try {
       const uploaded: Attachment[] = [];
       for (const file of Array.from(files)) {
-        const result = await upload(file.name, file, {
-          access: "public",
-          handleUploadUrl: "/api/upload",
-        });
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        if (!res.ok) throw new Error("Upload failed");
+        const { url } = await res.json();
         uploaded.push({
-          fileUrl: result.url,
+          fileUrl: url,
           fileName: file.name,
           fileType: file.type.startsWith("image/") ? "image" : "document",
           fileSize: file.size,

@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { put } from "@vercel/blob";
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
@@ -10,29 +10,15 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json()) as HandleUploadBody;
-
   try {
-    const jsonResponse = await handleUpload({
-      body,
-      request,
-      onBeforeGenerateToken: async () => ({
-        allowedContentTypes: [
-          "image/jpeg",
-          "image/png",
-          "image/gif",
-          "image/webp",
-          "application/pdf",
-          "application/msword",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ],
-        maximumSizeInBytes: 10 * 1024 * 1024, // 10 MB
-      }),
-      onUploadCompleted: async ({ blob }) => {
-        console.log("Blob upload completed:", blob.url);
-      },
-    });
-    return NextResponse.json(jsonResponse);
+    const formData = await request.formData();
+    const file = formData.get("file") as File | null;
+    if (!file) {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    const blob = await put(file.name, file, { access: "public" });
+    return NextResponse.json({ url: blob.url });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }

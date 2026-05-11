@@ -12,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { updateOrganization } from "@/lib/actions/organizations";
-import { upload } from "@vercel/blob/client";
 import { toast } from "sonner";
 import { Loader2, Upload, X } from "lucide-react";
 import type { Organization } from "@/lib/db/schema";
@@ -49,11 +48,12 @@ export default function WardSettingsForm({ ward }: { ward: Organization }) {
     if (!file) return;
     setUploading(true);
     try {
-      const result = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/upload",
-      });
-      setter(result.url);
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
+      setter(url);
       toast.success(`${label} uploaded`);
     } catch {
       toast.error(`${label} upload failed`);
