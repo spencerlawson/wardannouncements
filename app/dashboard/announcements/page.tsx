@@ -7,7 +7,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
+import DeleteAnnouncementButton from "@/components/announcements/DeleteAnnouncementButton";
 
 const statusColors: Record<string, string> = {
   draft: "secondary",
@@ -69,6 +70,13 @@ export default async function AnnouncementsPage() {
       r.createdById === session.user.id
   );
 
+  const canEdit = (r: typeof visible[0]) =>
+    isLeaderOf.has(r.orgId) ||
+    session.user.isSuperAdmin ||
+    (r.createdById === session.user.id && (r.status === "draft" || r.status === "revision_requested"));
+
+  const canDelete = canEdit;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -92,22 +100,33 @@ export default async function AnnouncementsPage() {
       ) : (
         <div className="divide-y border rounded-lg bg-white overflow-hidden">
           {visible.map((a) => (
-            <Link
-              key={a.id}
-              href={`/dashboard/announcements/${a.id}`}
-              className="flex items-center justify-between p-4 hover:bg-muted/40 transition-colors"
-            >
-              <div className="space-y-0.5 min-w-0">
+            <div key={a.id} className="flex items-center justify-between p-4 gap-3">
+              <Link
+                href={`/dashboard/announcements/${a.id}`}
+                className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
+              >
                 <p className="font-medium truncate">{a.title}</p>
                 <p className="text-sm text-muted-foreground">
                   {a.orgName} · {format(new Date(a.displayStartDate), "MMM d")} –{" "}
                   {format(new Date(a.displayEndDate), "MMM d, yyyy")}
                 </p>
+              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge variant={statusColors[a.status] as any}>
+                  {statusLabels[a.status]}
+                </Badge>
+                {canEdit(a) && (
+                  <Link href={`/dashboard/announcements/${a.id}/edit`}>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
+                )}
+                {canDelete(a) && (
+                  <DeleteAnnouncementButton announcementId={a.id} iconOnly />
+                )}
               </div>
-              <Badge variant={statusColors[a.status] as any} className="ml-4 shrink-0">
-                {statusLabels[a.status]}
-              </Badge>
-            </Link>
+            </div>
           ))}
         </div>
       )}

@@ -214,6 +214,30 @@ export async function requestRevision(announcementId: string, notes: string) {
   revalidatePath("/dashboard/announcements");
 }
 
+export async function deleteAnnouncement(announcementId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const [ann] = await db
+    .select({ organizationId: announcements.organizationId, createdBy: announcements.createdBy, status: announcements.status })
+    .from(announcements)
+    .where(eq(announcements.id, announcementId));
+
+  if (!ann) throw new Error("Not found");
+
+  const roles = await getUserRolesInOrg(session.user.id, ann.organizationId);
+  const isLeader = canApproveAnnouncements(roles, session.user.isSuperAdmin);
+  const isOwner = ann.createdBy === session.user.id;
+  const ownerCanDelete = isOwner && (ann.status === "draft" || ann.status === "revision_requested");
+
+  if (!isLeader && !ownerCanDelete) throw new Error("Forbidden");
+
+  await db.delete(announcements).where(eq(announcements.id, announcementId));
+
+  revalidatePath("/dashboard/announcements");
+  redirect("/dashboard/announcements");
+}
+
 export async function updateAnnouncement({
   announcementId,
   title,
@@ -242,7 +266,11 @@ export async function updateAnnouncement({
     .where(eq(announcements.id, announcementId));
 
   if (!ann) throw new Error("Not found");
-  if (ann.createdBy !== session.user.id && !session.user.isSuperAdmin) throw new Error("Forbidden");
+
+  const roles = await getUserRolesInOrg(session.user.id, ann.organizationId);
+  const isLeader = canApproveAnnouncements(roles, session.user.isSuperAdmin);
+  const isOwner = ann.createdBy === session.user.id;
+  if (!isLeader && !isOwner) throw new Error("Forbidden");
 
   const status = submit ? ("submitted" as const) : ("draft" as const);
 

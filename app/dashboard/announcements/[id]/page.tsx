@@ -13,7 +13,8 @@ import { eq, and } from "drizzle-orm";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import AnnouncementActions from "@/components/announcements/AnnouncementActions";
-import { Paperclip } from "lucide-react";
+import DeleteAnnouncementButton from "@/components/announcements/DeleteAnnouncementButton";
+import { Paperclip, Pencil } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -103,7 +104,20 @@ export default async function AnnouncementDetailPage({
             {format(new Date(a.displayEndDate), "MMM d, yyyy")}
           </p>
         </div>
-        <Badge variant={statusVariants[a.status]}>{statusLabels[a.status]}</Badge>
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge variant={statusVariants[a.status]}>{statusLabels[a.status]}</Badge>
+          {(isLeader || (isOwner && (a.status === "draft" || a.status === "revision_requested"))) && (
+            <Link href={`/dashboard/announcements/${a.id}/edit`}>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Pencil className="h-3.5 w-3.5" />
+                Edit
+              </Button>
+            </Link>
+          )}
+          {(isLeader || (isOwner && (a.status === "draft" || a.status === "revision_requested"))) && (
+            <DeleteAnnouncementButton announcementId={a.id} />
+          )}
+        </div>
       </div>
 
       {/* Actions available based on role and status */}
@@ -131,7 +145,7 @@ export default async function AnnouncementDetailPage({
                 href={att.fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-500 hover:underline"
               >
                 <Paperclip className="h-4 w-4 shrink-0" />
                 {att.fileName}
@@ -166,11 +180,6 @@ export default async function AnnouncementDetailPage({
         </div>
       </div>
 
-      {(isOwner && (a.status === "draft" || a.status === "revision_requested")) && (
-        <Link href={`/dashboard/announcements/${a.id}/edit`}>
-          <Button variant="outline">Edit Announcement</Button>
-        </Link>
-      )}
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { announcements, announcementAttachments, organizations, userOrganizationRoles } from "@/lib/db/schema";
+import { announcements, announcementAttachments, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { getUserRolesInOrg, canApproveAnnouncements } from "@/lib/permissions";
 import EditAnnouncementForm from "@/components/announcements/EditAnnouncementForm";
 
 export default async function EditAnnouncementPage({
@@ -25,11 +26,10 @@ export default async function EditAnnouncementPage({
 
   const { announcement, org } = row;
 
-  // Only owner (for draft/revision) or leaders can edit
   const isOwner = announcement.createdBy === session.user.id;
-  const canEdit =
-    session.user.isSuperAdmin ||
-    isOwner && (announcement.status === "draft" || announcement.status === "revision_requested");
+  const roles = await getUserRolesInOrg(session.user.id, announcement.organizationId);
+  const isLeader = canApproveAnnouncements(roles, session.user.isSuperAdmin);
+  const canEdit = isLeader || (isOwner && (announcement.status === "draft" || announcement.status === "revision_requested"));
 
   if (!canEdit) redirect(`/dashboard/announcements/${id}`);
 
