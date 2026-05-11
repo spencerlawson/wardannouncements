@@ -2,10 +2,12 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { userOrganizationRoles, organizations, users } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { Badge } from "@/components/ui/badge";
+import { eq } from "drizzle-orm";
 import AddUserForm from "@/components/users/AddUserForm";
 import RemoveUserButton from "@/components/users/RemoveUserButton";
+import EditUserRoleSelect from "@/components/users/EditUserRoleSelect";
+import CSVUploadForm from "@/components/users/CSVUploadForm";
+import { Badge } from "@/components/ui/badge";
 
 export default async function UsersPage() {
   const session = await auth();
@@ -23,8 +25,8 @@ export default async function UsersPage() {
 
   if (!leadership && !session.user.isSuperAdmin) redirect("/dashboard");
 
-  const orgId = leadership?.org.id;
-  if (!orgId) redirect("/dashboard");
+  const orgId = leadership?.org.id ?? "";
+  const orgName = leadership?.org.name ?? "";
 
   const wardUsers = await db
     .select({
@@ -40,29 +42,52 @@ export default async function UsersPage() {
     .orderBy(users.name);
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold">Ward Users</h1>
-
-      <div className="divide-y border rounded-lg bg-white overflow-hidden">
-        {wardUsers.map((u) => (
-          <div key={u.roleId} className="flex items-center justify-between p-4">
-            <div>
-              <p className="font-medium">{u.userName ?? u.userEmail}</p>
-              <p className="text-sm text-muted-foreground">{u.userEmail}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="capitalize">
-                {u.role.replace("_", " ")}
-              </Badge>
-              {u.userId !== session.user.id && (
-                <RemoveUserButton roleId={u.roleId} />
-              )}
-            </div>
-          </div>
-        ))}
+    <div className="max-w-2xl space-y-8">
+      <div>
+        <h1 className="text-2xl font-semibold">Ward Users</h1>
+        <p className="text-sm text-muted-foreground mt-1">{orgName} · {wardUsers.length} member{wardUsers.length !== 1 ? "s" : ""}</p>
       </div>
 
-      <AddUserForm organizationId={orgId} />
+      {/* Member list */}
+      <div className="space-y-2">
+        <h2 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Members</h2>
+        {wardUsers.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">No members yet.</p>
+        ) : (
+          <div className="divide-y border rounded-lg bg-white overflow-hidden">
+            {wardUsers.map((u) => (
+              <div key={u.roleId} className="flex items-center justify-between p-3 gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{u.userName ?? <span className="text-muted-foreground italic">No name</span>}</p>
+                  <p className="text-xs text-muted-foreground truncate">{u.userEmail}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {u.role === "stake_leader" ? (
+                    <Badge variant="secondary" className="text-xs">Stake Leader</Badge>
+                  ) : (
+                    <EditUserRoleSelect roleId={u.roleId} currentRole={u.role as "ward_leader" | "announcement_poster"} />
+                  )}
+                  {u.userId !== session.user.id && (
+                    <RemoveUserButton roleId={u.roleId} />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add single user */}
+      <div className="space-y-2">
+        <h2 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Add User</h2>
+        <AddUserForm organizationId={orgId} />
+      </div>
+
+      {/* CSV bulk upload */}
+      <div className="space-y-2">
+        <h2 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Bulk Upload via CSV</h2>
+        <CSVUploadForm organizationId={orgId} />
+      </div>
     </div>
   );
 }
