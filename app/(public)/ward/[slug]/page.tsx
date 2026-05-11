@@ -117,8 +117,8 @@ export default async function WardPage({
             <Image
               src={org.logoUrl}
               alt={`${org.name} logo`}
-              width={56}
-              height={56}
+              width={73}
+              height={73}
               className="rounded-full object-cover bg-white/20 shrink-0"
             />
           )}
