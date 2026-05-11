@@ -29,7 +29,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
     Resend({
       from: process.env.EMAIL_FROM ?? "noreply@wardannouncements.com",
-      allowDangerousEmailAccountLinking: true,
     }),
   ],
   callbacks: {
