@@ -47,7 +47,10 @@ export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
         const formData = new FormData();
         formData.append("file", file);
         const res = await fetch("/api/upload", { method: "POST", body: formData });
-        if (!res.ok) throw new Error("Upload failed");
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? "Upload failed");
+        }
         const { url } = await res.json();
         uploaded.push({
           fileUrl: url,
@@ -58,8 +61,8 @@ export default function AnnouncementForm({ orgs }: { orgs: Org[] }) {
       }
       setAttachments((prev) => [...prev, ...uploaded]);
       toast.success(`${uploaded.length} file(s) uploaded`);
-    } catch {
-      toast.error("Upload failed. Please try again.");
+    } catch (err) {
+      toast.error((err as Error).message ?? "Upload failed. Please try again.");
     } finally {
       setUploading(false);
     }

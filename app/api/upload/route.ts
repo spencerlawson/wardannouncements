@@ -17,9 +17,23 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const blob = await put(file.name, file, { access: "public" });
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+      console.error("BLOB_READ_WRITE_TOKEN is not set");
+      return NextResponse.json({ error: "Storage not configured" }, { status: 500 });
+    }
+
+    const blob = await put(file.name, file, {
+      access: "public",
+      token,
+      contentType: file.type || "application/octet-stream",
+    });
     return NextResponse.json({ url: blob.url });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+    console.error("Blob upload error:", error);
+    return NextResponse.json(
+      { error: (error as Error).message ?? "Upload failed" },
+      { status: 400 }
+    );
   }
 }

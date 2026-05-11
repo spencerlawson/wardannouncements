@@ -45,7 +45,10 @@ export default function EditAnnouncementForm({
         const formData = new FormData();
         formData.append("file", file);
         const res = await fetch("/api/upload", { method: "POST", body: formData });
-        if (!res.ok) throw new Error("Upload failed");
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? "Upload failed");
+        }
         const { url } = await res.json();
         uploaded.push({
           fileUrl: url,
@@ -56,8 +59,8 @@ export default function EditAnnouncementForm({
       }
       setNewAttachments((prev) => [...prev, ...uploaded]);
       toast.success(`${uploaded.length} file(s) uploaded`);
-    } catch {
-      toast.error("Upload failed");
+    } catch (err) {
+      toast.error((err as Error).message ?? "Upload failed");
     } finally {
       setUploading(false);
     }
