@@ -96,8 +96,8 @@ export default async function DashboardLayout({
                   <DropdownMenuContent align="start">
                     <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Select ward</DropdownMenuLabel>
                     {leaderOrgs.map((m) => (
-                      <DropdownMenuItem key={m.orgId}>
-                        <Link href={`/dashboard/users?org=${m.orgId}`} className="w-full">{m.orgName}</Link>
+                      <DropdownMenuItem key={m.orgId} render={<Link href={`/dashboard/users?org=${m.orgId}`} />}>
+                        {m.orgName}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
@@ -111,8 +111,8 @@ export default async function DashboardLayout({
                   <DropdownMenuContent align="start">
                     <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Select ward</DropdownMenuLabel>
                     {leaderOrgs.map((m) => (
-                      <DropdownMenuItem key={m.orgId}>
-                        <Link href={`/dashboard/settings?org=${m.orgId}`} className="w-full">{m.orgName}</Link>
+                      <DropdownMenuItem key={m.orgId} render={<Link href={`/dashboard/settings?org=${m.orgId}`} />}>
+                        {m.orgName}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
