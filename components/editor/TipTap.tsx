@@ -2,8 +2,6 @@
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -13,13 +11,11 @@ import { Separator } from "@/components/ui/separator";
 import {
   Bold,
   Italic,
-  Underline as UnderlineIcon,
   List,
   ListOrdered,
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Link as LinkIcon,
   Heading2,
   Heading3,
 } from "lucide-react";
@@ -35,8 +31,6 @@ export function TipTapEditor({ content, onChange, readOnly = false }: TipTapEdit
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Underline,
-      Link.configure({ openOnClick: false }),
       Image,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TextStyle,
@@ -57,17 +51,6 @@ export function TipTapEditor({ content, onChange, readOnly = false }: TipTapEdit
   }, [content, editor]);
 
   if (!editor) return null;
-
-  const setLink = () => {
-    const previousUrl = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("URL", previousUrl ?? "");
-    if (url === null) return;
-    if (url === "") {
-      editor.chain().focus().unsetLink().run();
-    } else {
-      editor.chain().focus().setLink({ href: url }).run();
-    }
-  };
 
   return (
     <div className="border rounded-lg overflow-hidden focus-within:ring-1 focus-within:ring-ring">
@@ -90,15 +73,6 @@ export function TipTapEditor({ content, onChange, readOnly = false }: TipTapEdit
             onClick={() => editor.chain().focus().toggleItalic().run()}
           >
             <Italic className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant={editor.isActive("underline") ? "secondary" : "ghost"}
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-          >
-            <UnderlineIcon className="h-3.5 w-3.5" />
           </Button>
 
           <Separator orientation="vertical" className="h-5 mx-0.5" />
@@ -173,17 +147,6 @@ export function TipTapEditor({ content, onChange, readOnly = false }: TipTapEdit
             <AlignRight className="h-3.5 w-3.5" />
           </Button>
 
-          <Separator orientation="vertical" className="h-5 mx-0.5" />
-
-          <Button
-            type="button"
-            variant={editor.isActive("link") ? "secondary" : "ghost"}
-            size="icon"
-            className="h-7 w-7"
-            onClick={setLink}
-          >
-            <LinkIcon className="h-3.5 w-3.5" />
-          </Button>
         </div>
       )}
       <EditorContent
