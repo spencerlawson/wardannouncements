@@ -124,6 +124,7 @@ export const announcements = pgTable("announcements", {
   body: text("body").notNull().default(""),
   headerImageUrl: text("header_image_url"),
   status: announcementStatusEnum("status").notNull().default("draft"),
+  isPinned: boolean("is_pinned").notNull().default(false),
   displayStartDate: date("display_start_date").notNull(),
   displayEndDate: date("display_end_date").notNull(),
   createdBy: text("created_by")
@@ -147,6 +148,16 @@ export const announcementAttachments = pgTable("announcement_attachments", {
   fileType: attachmentTypeEnum("file_type").notNull(),
   fileSize: integer("file_size").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Announcement Auxiliaries (org tags) ─────────────────────────────────────
+
+export const announcementAuxiliaries = pgTable("announcement_auxiliaries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  announcementId: uuid("announcement_id")
+    .notNull()
+    .references(() => announcements.id, { onDelete: "cascade" }),
+  auxiliary: text("auxiliary").notNull(),
 });
 
 // ─── Announcement History (audit trail) ──────────────────────────────────────
@@ -210,7 +221,15 @@ export const announcementsRelations = relations(announcements, ({ one, many }) =
     relationName: "announcementApprover",
   }),
   attachments: many(announcementAttachments),
+  auxiliaries: many(announcementAuxiliaries),
   history: many(announcementHistory),
+}));
+
+export const announcementAuxiliariesRelations = relations(announcementAuxiliaries, ({ one }) => ({
+  announcement: one(announcements, {
+    fields: [announcementAuxiliaries.announcementId],
+    references: [announcements.id],
+  }),
 }));
 
 export const announcementAttachmentsRelations = relations(announcementAttachments, ({ one }) => ({
@@ -237,6 +256,7 @@ export type Organization = typeof organizations.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Announcement = typeof announcements.$inferSelect;
 export type AnnouncementAttachment = typeof announcementAttachments.$inferSelect;
+export type AnnouncementAuxiliary = typeof announcementAuxiliaries.$inferSelect;
 export type AnnouncementHistoryEntry = typeof announcementHistory.$inferSelect;
 export type UserOrganizationRole = typeof userOrganizationRoles.$inferSelect;
 export type OrgRole = "ward_leader" | "announcement_poster" | "stake_leader";

@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { announcements, announcementAttachments, organizations } from "@/lib/db/schema";
+import { announcements, announcementAttachments, announcementAuxiliaries, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getUserRolesInOrg, canApproveAnnouncements } from "@/lib/permissions";
 import EditAnnouncementForm from "@/components/announcements/EditAnnouncementForm";
@@ -33,10 +33,10 @@ export default async function EditAnnouncementPage({
 
   if (!canEdit) redirect(`/dashboard/announcements/${id}`);
 
-  const attachments = await db
-    .select()
-    .from(announcementAttachments)
-    .where(eq(announcementAttachments.announcementId, id));
+  const [attachments, auxRows] = await Promise.all([
+    db.select().from(announcementAttachments).where(eq(announcementAttachments.announcementId, id)),
+    db.select().from(announcementAuxiliaries).where(eq(announcementAuxiliaries.announcementId, id)),
+  ]);
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -45,6 +45,8 @@ export default async function EditAnnouncementPage({
         announcement={announcement}
         org={{ id: org.id, name: org.name }}
         existingAttachments={attachments}
+        existingAuxiliaries={auxRows.map((r) => r.auxiliary)}
+        canPin={isLeader}
       />
     </div>
   );

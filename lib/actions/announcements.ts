@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import {
   announcements,
   announcementAttachments,
+  announcementAuxiliaries,
   announcementHistory,
   userOrganizationRoles,
   organizations,
@@ -35,6 +36,8 @@ export async function createAnnouncement({
   displayStartDate,
   displayEndDate,
   attachments: atts,
+  auxiliaries,
+  isPinned,
   submit,
 }: {
   organizationId: string;
@@ -44,6 +47,8 @@ export async function createAnnouncement({
   displayStartDate: string;
   displayEndDate: string;
   attachments: Attachment[];
+  auxiliaries: string[];
+  isPinned: boolean;
   submit: boolean;
 }) {
   const session = await auth();
@@ -51,9 +56,23 @@ export async function createAnnouncement({
 
   const status = submit ? ("submitted" as const) : ("draft" as const);
 
+  // Only leaders/admins can pin
+  const roles = await getUserRolesInOrg(session.user.id, organizationId);
+  const canPin = canApproveAnnouncements(roles, session.user.isSuperAdmin);
+
   const [newAnn] = await db
     .insert(announcements)
-    .values({ organizationId, title, body, headerImageUrl: headerImageUrl || null, displayStartDate, displayEndDate, status, createdBy: session.user.id })
+    .values({
+      organizationId,
+      title,
+      body,
+      headerImageUrl: headerImageUrl || null,
+      displayStartDate,
+      displayEndDate,
+      status,
+      isPinned: canPin ? isPinned : false,
+      createdBy: session.user.id,
+    })
     .returning();
 
   await db.insert(announcementHistory).values({
@@ -65,6 +84,12 @@ export async function createAnnouncement({
   if (atts.length > 0) {
     await db.insert(announcementAttachments).values(
       atts.map((att) => ({ announcementId: newAnn.id, ...att }))
+    );
+  }
+
+  if (auxiliaries.length > 0) {
+    await db.insert(announcementAuxiliaries).values(
+      auxiliaries.map((aux) => ({ announcementId: newAnn.id, auxiliary: aux }))
     );
   }
 
@@ -249,6 +274,8 @@ export async function updateAnnouncement({
   displayEndDate,
   newAttachments,
   removedAttachmentIds,
+  auxiliaries,
+  isPinned,
   submit,
 }: {
   announcementId: string;
@@ -259,6 +286,8 @@ export async function updateAnnouncement({
   displayEndDate: string;
   newAttachments: Attachment[];
   removedAttachmentIds: string[];
+  auxiliaries: string[];
+  isPinned: boolean;
   submit: boolean;
 }) {
   const session = await auth();
@@ -280,7 +309,16 @@ export async function updateAnnouncement({
 
   await db
     .update(announcements)
-    .set({ title, body, headerImageUrl: headerImageUrl ?? null, displayStartDate, displayEndDate, status, updatedAt: new Date() })
+    .set({
+      title,
+      body,
+      headerImageUrl: headerImageUrl ?? null,
+      displayStartDate,
+      displayEndDate,
+      status,
+      isPinned: isLeader ? isPinned : undefined,
+      updatedAt: new Date(),
+    })
     .where(eq(announcements.id, announcementId));
 
   await db.insert(announcementHistory).values({
@@ -301,6 +339,17 @@ export async function updateAnnouncement({
     );
   }
 
+  // Replace auxiliaries: delete all existing, re-insert new set
+  await db
+    .delete(announcementAuxiliaries)
+    .where(eq(announcementAuxiliaries.announcementId, announcementId));
+
+  if (auxiliaries.length > 0) {
+    await db.insert(announcementAuxiliaries).values(
+      auxiliaries.map((aux) => ({ announcementId, auxiliary: aux }))
+    );
+  }
+
   if (submit) {
     await notifyLeadersOfSubmission(
       ann.organizationId,
@@ -312,6 +361,33 @@ export async function updateAnnouncement({
 
   revalidatePath(`/dashboard/announcements/${announcementId}`);
   redirect(`/dashboard/announcements/${announcementId}`);
+}
+
+export async function togglePin(announcementId: string, pinned: boolean) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const [ann] = await db
+    .select({
+      organizationId: announcements.organizationId,
+      organization: { slug: organizations.slug },
+    })
+    .from(announcements)
+    .innerJoin(organizations, eq(announcements.organizationId, organizations.id))
+    .where(eq(announcements.id, announcementId));
+
+  if (!ann) throw new Error("Not found");
+
+  const roles = await getUserRolesInOrg(session.user.id, ann.organizationId);
+  if (!canApproveAnnouncements(roles, session.user.isSuperAdmin)) throw new Error("Forbidden");
+
+  await db
+    .update(announcements)
+    .set({ isPinned: pinned, updatedAt: new Date() })
+    .where(eq(announcements.id, announcementId));
+
+  revalidatePath(`/ward/${ann.organization.slug}`);
+  revalidatePath(`/dashboard/announcements/${announcementId}`);
 }
 
 async function notifyLeadersOfSubmission(

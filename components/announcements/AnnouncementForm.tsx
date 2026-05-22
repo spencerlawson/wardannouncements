@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/select";
 import { createAnnouncement } from "@/lib/actions/announcements";
 import { toast } from "sonner";
-import { Loader2, Upload, X, FileText, ImageIcon } from "lucide-react";
+import { Loader2, Upload, X, FileText, ImageIcon, Pin } from "lucide-react";
+import { WARD_AUXILIARIES, AUXILIARY_COLORS } from "@/lib/constants/auxiliaries";
 
 interface Org {
   id: string;
@@ -40,7 +41,15 @@ async function uploadFile(file: File): Promise<string> {
   return url;
 }
 
-export default function AnnouncementForm({ orgs, defaultOrgId }: { orgs: Org[]; defaultOrgId?: string }) {
+export default function AnnouncementForm({
+  orgs,
+  defaultOrgId,
+  canPin = false,
+}: {
+  orgs: Org[];
+  defaultOrgId?: string;
+  canPin?: boolean;
+}) {
   const [selectedOrgId, setSelectedOrgId] = useState(
     (defaultOrgId && orgs.some((o) => o.id === defaultOrgId) ? defaultOrgId : null) ?? orgs[0]?.id ?? ""
   );
@@ -52,7 +61,15 @@ export default function AnnouncementForm({ orgs, defaultOrgId }: { orgs: Org[]; 
   const [uploadingHeader, setUploadingHeader] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [selectedAuxiliaries, setSelectedAuxiliaries] = useState<string[]>([]);
+  const [isPinned, setIsPinned] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const toggleAuxiliary = (aux: string) => {
+    setSelectedAuxiliaries((prev) =>
+      prev.includes(aux) ? prev.filter((a) => a !== aux) : [...prev, aux]
+    );
+  };
 
   const handleHeaderImageUpload = async (file: File | null) => {
     if (!file) return;
@@ -106,6 +123,8 @@ export default function AnnouncementForm({ orgs, defaultOrgId }: { orgs: Org[]; 
           displayStartDate,
           displayEndDate,
           attachments,
+          auxiliaries: selectedAuxiliaries,
+          isPinned,
           submit,
         });
       } catch (error) {
@@ -169,6 +188,56 @@ export default function AnnouncementForm({ orgs, defaultOrgId }: { orgs: Org[]; 
           />
         </div>
       </div>
+
+      {/* Auxiliaries */}
+      <div className="space-y-2">
+        <Label>Auxiliaries</Label>
+        <p className="text-xs text-muted-foreground">Tag which ward organizations this announcement is for</p>
+        <div className="flex flex-wrap gap-2">
+          {WARD_AUXILIARIES.map((aux) => {
+            const active = selectedAuxiliaries.includes(aux);
+            const color = AUXILIARY_COLORS[aux];
+            return (
+              <button
+                key={aux}
+                type="button"
+                onClick={() => toggleAuxiliary(aux)}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-all border"
+                style={
+                  active
+                    ? { backgroundColor: color, borderColor: color, color: "#fff" }
+                    : { backgroundColor: "transparent", borderColor: color, color: color }
+                }
+              >
+                {aux}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Pin to top */}
+      {canPin && (
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setIsPinned((v) => !v)}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+              isPinned
+                ? "bg-amber-50 border-amber-400 text-amber-700"
+                : "bg-transparent border-muted-foreground/30 text-muted-foreground hover:border-amber-400 hover:text-amber-600"
+            }`}
+          >
+            <Pin className="h-3.5 w-3.5" />
+            {isPinned ? "Pinned to top" : "Pin to top"}
+          </button>
+          {isPinned && (
+            <p className="text-xs text-muted-foreground">
+              This announcement will always appear first on the public ward page.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Header Image */}
       <div className="space-y-2">

@@ -1,14 +1,16 @@
 import { db } from "@/lib/db";
-import { organizations, announcements, announcementAttachments } from "@/lib/db/schema";
+import { organizations, announcements, announcementAttachments, announcementAuxiliaries } from "@/lib/db/schema";
 import { eq, and, lte, gte, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { getWeekBounds, weekOffsetLabel } from "@/lib/utils/weeks";
 import Image from "next/image";
 import { format } from "date-fns";
-import { ChevronLeft, ChevronRight, Paperclip } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type { Metadata } from "next";
+import AuxiliaryFilter from "@/components/public/AuxiliaryFilter";
+import CookieConsentBanner from "@/components/public/CookieConsentBanner";
 
 export const revalidate = 60;
 
@@ -64,6 +66,7 @@ export default async function WardPage({
       headerImageUrl: announcements.headerImageUrl,
       displayStartDate: announcements.displayStartDate,
       displayEndDate: announcements.displayEndDate,
+      isPinned: announcements.isPinned,
     })
     .from(announcements)
     .where(
@@ -75,26 +78,39 @@ export default async function WardPage({
       )
     );
 
-  const attachments =
-    weekAnnouncements.length > 0
-      ? await db
-          .select()
-          .from(announcementAttachments)
-          .where(
-            inArray(
-              announcementAttachments.announcementId,
-              weekAnnouncements.map((a) => a.id)
-            )
-          )
-      : [];
+  const announcementIds = weekAnnouncements.map((a) => a.id);
 
-  const attsByAnnouncement = attachments.reduce<
-    Record<string, typeof attachments>
-  >((acc, att) => {
-    if (!acc[att.announcementId]) acc[att.announcementId] = [];
-    acc[att.announcementId].push(att);
-    return acc;
-  }, {});
+  const [attachments, auxRows] =
+    announcementIds.length > 0
+      ? await Promise.all([
+          db
+            .select()
+            .from(announcementAttachments)
+            .where(inArray(announcementAttachments.announcementId, announcementIds)),
+          db
+            .select()
+            .from(announcementAuxiliaries)
+            .where(inArray(announcementAuxiliaries.announcementId, announcementIds)),
+        ])
+      : [[], []];
+
+  const attsByAnnouncement = attachments.reduce<Record<string, typeof attachments>>(
+    (acc, att) => {
+      if (!acc[att.announcementId]) acc[att.announcementId] = [];
+      acc[att.announcementId].push(att);
+      return acc;
+    },
+    {}
+  );
+
+  const auxByAnnouncement = auxRows.reduce<Record<string, string[]>>(
+    (acc, row) => {
+      if (!acc[row.announcementId]) acc[row.announcementId] = [];
+      acc[row.announcementId].push(row.auxiliary);
+      return acc;
+    },
+    {}
+  );
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -158,67 +174,23 @@ export default async function WardPage({
           )}
         </div>
 
-        {/* Announcements */}
-        {weekAnnouncements.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            No announcements for this week.
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {weekAnnouncements.map((announcement) => {
-              const allAttachments = attsByAnnouncement[announcement.id] ?? [];
-
-              return (
-                <article
-                  key={announcement.id}
-                  className="bg-white rounded-xl border shadow-sm overflow-hidden"
-                >
-                  {announcement.headerImageUrl && (
-                    <div className="relative aspect-video w-full">
-                      <Image
-                        src={announcement.headerImageUrl}
-                        alt={announcement.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
-
-                  <div className="p-6 space-y-4">
-                    <h2 className="text-xl font-semibold">{announcement.title}</h2>
-
-                    <div
-                      className="prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: announcement.body }}
-                    />
-
-                    {allAttachments.length > 0 && (
-                      <div className="space-y-1.5 pt-3 border-t">
-                        {allAttachments.map((att) => (
-                          <a
-                            key={att.id}
-                            href={att.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-500 hover:underline"
-                          >
-                            <Paperclip className="h-4 w-4 shrink-0" />
-                            {att.fileName}
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
+        {/* Announcements with auxiliary filtering */}
+        <AuxiliaryFilter
+          announcements={weekAnnouncements.map((a) => ({
+            ...a,
+            auxiliaries: auxByAnnouncement[a.id] ?? [],
+            attachments: attsByAnnouncement[a.id] ?? [],
+          }))}
+          wardSlug={slug}
+          primaryColor={org.primaryColor}
+        />
       </main>
 
       <footer className="border-t mt-12 py-6 text-center text-sm text-muted-foreground">
         {org.name} · Powered by Ward Announcements
       </footer>
+
+      <CookieConsentBanner />
     </div>
   );
 }

@@ -28,10 +28,14 @@ export default async function NewAnnouncementPage({
 
   const orgsForUser = memberships.map((m) => ({ id: m.org.id, name: m.org.name }));
 
+  const canPin =
+    session.user.isSuperAdmin ||
+    memberships.some((m) => m.role === "ward_leader" || m.role === "stake_leader");
+
   return (
     <div className="max-w-3xl space-y-6">
       <h1 className="text-2xl font-semibold">New Announcement</h1>
-      <AnnouncementForm orgs={orgsForUser} defaultOrgId={orgParam} />
+      <AnnouncementForm orgs={orgsForUser} defaultOrgId={orgParam} canPin={canPin} />
     </div>
   );
 }

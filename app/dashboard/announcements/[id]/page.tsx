@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import {
   announcements,
   announcementAttachments,
+  announcementAuxiliaries,
   announcementHistory,
   organizations,
   users,
@@ -14,7 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import AnnouncementActions from "@/components/announcements/AnnouncementActions";
 import DeleteAnnouncementButton from "@/components/announcements/DeleteAnnouncementButton";
-import { Paperclip, Pencil } from "lucide-react";
+import PinButton from "@/components/announcements/PinButton";
+import { AUXILIARY_COLORS } from "@/lib/constants/auxiliaries";
+import { Paperclip, Pencil, Pin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -75,10 +78,10 @@ export default async function AnnouncementDetailPage({
 
   if (!isOwner && !isLeader) redirect("/dashboard");
 
-  const attachments = await db
-    .select()
-    .from(announcementAttachments)
-    .where(eq(announcementAttachments.announcementId, id));
+  const [attachments, auxRows] = await Promise.all([
+    db.select().from(announcementAttachments).where(eq(announcementAttachments.announcementId, id)),
+    db.select().from(announcementAuxiliaries).where(eq(announcementAuxiliaries.announcementId, id)),
+  ]);
 
   const history = await db
     .select({
@@ -119,6 +122,34 @@ export default async function AnnouncementDetailPage({
             <DeleteAnnouncementButton announcementId={a.id} />
           )}
         </div>
+      </div>
+
+      {/* Auxiliary tags + pin status */}
+      <div className="flex flex-wrap items-center gap-2">
+        {auxRows.map((row) => {
+          const color = AUXILIARY_COLORS[row.auxiliary] ?? "#64748b";
+          return (
+            <span
+              key={row.id}
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+              style={{ backgroundColor: `${color}20`, color: color, border: `1px solid ${color}40` }}
+            >
+              {row.auxiliary}
+            </span>
+          );
+        })}
+        {a.isPinned && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+            <Pin className="h-3 w-3" />
+            Pinned
+          </span>
+        )}
+        {isLeader && (
+          <PinButton
+            announcementId={a.id}
+            isPinned={a.isPinned}
+          />
+        )}
       </div>
 
       {/* Actions available based on role and status */}
