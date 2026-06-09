@@ -28,7 +28,8 @@ export async function GET(
     }
   }
 
-  const wardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/ward/${org.slug}`;
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  const wardUrl = `${appUrl}/ward/${org.slug}`;
   const buffer = await generateQRCodeBuffer(wardUrl);
 
   const format = new URL(_req.url).searchParams.get("format");
@@ -38,6 +39,7 @@ export async function GET(
       wardUrl,
       wardName: org.name,
       primaryColor: org.primaryColor,
+      logoUrl: org.logoUrl,
     });
   }
 
