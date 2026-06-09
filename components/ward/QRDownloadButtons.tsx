@@ -28,8 +28,7 @@ function buildMarketingHTML(
   wardName: string,
   wardUrl: string,
   qrDataUrl: string,
-  primaryColor: string,
-  logoUrl?: string | null
+  primaryColor: string
 ): string {
   const safe = escapeHtml(wardName);
   const color = primaryColor || "#1a365d";
@@ -73,12 +72,6 @@ function buildMarketingHTML(
       padding: 0.4in 1in 0.3in;
       text-align: center;
       gap: 0;
-    }
-    .logo {
-      max-height: 0.85in;
-      max-width: 3in;
-      object-fit: contain;
-      margin-bottom: 0.15in;
     }
     .ward-name {
       font-size: 30pt;
@@ -150,7 +143,6 @@ function buildMarketingHTML(
   <div class="page">
     <div class="top-bar"></div>
     <div class="content">
-      ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" class="logo" alt="${safe} logo" />` : ""}
       <div class="ward-name">${safe}</div>
       <div class="tagline">Stay connected with your ward community</div>
 
@@ -181,8 +173,8 @@ export default function QRDownloadButtons({ orgId, wardSlug }: Props) {
     try {
       const res = await fetch(`/api/qrcode/${orgId}?format=dataurl`);
       if (!res.ok) return;
-      const { dataUrl, wardUrl, wardName, primaryColor, logoUrl } = await res.json();
-      const html = buildMarketingHTML(wardName, wardUrl, dataUrl, primaryColor, logoUrl);
+      const { dataUrl, wardUrl, wardName, primaryColor } = await res.json();
+      const html = buildMarketingHTML(wardName, wardUrl, dataUrl, primaryColor);
       const win = window.open("", "_blank", "width=900,height=700");
       if (!win) return;
       win.document.open();
