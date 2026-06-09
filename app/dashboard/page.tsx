@@ -87,6 +87,11 @@ export default async function DashboardPage() {
                 </Link>
                 {(role === "ward_leader" || role === "stake_leader") && (
                   <>
+                    <Link href={`/dashboard/programs?org=${org.id}`}>
+                      <Button variant="outline" size="sm">
+                        Programs
+                      </Button>
+                    </Link>
                     <Link href={`/dashboard/users?org=${org.id}`}>
                       <Button variant="outline" size="sm">
                         Users
