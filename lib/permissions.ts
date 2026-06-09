@@ -36,3 +36,7 @@ export function canPostAnnouncements(roles: OrgRole[], isSuperAdmin: boolean): b
 export function canManageUsers(roles: OrgRole[], isSuperAdmin: boolean): boolean {
   return canManageOrg(roles, isSuperAdmin);
 }
+
+export function canManagePrograms(roles: OrgRole[], isSuperAdmin: boolean): boolean {
+  return canManageOrg(roles, isSuperAdmin);
+}

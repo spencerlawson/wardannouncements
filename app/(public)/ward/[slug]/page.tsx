@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { organizations, announcements, announcementAttachments, announcementAuxiliaries } from "@/lib/db/schema";
-import { eq, and, lte, gte, inArray } from "drizzle-orm";
+import { organizations, announcements, announcementAttachments, announcementAuxiliaries, programs, programItems } from "@/lib/db/schema";
+import { eq, and, lte, gte, inArray, between, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { getWeekBounds, weekOffsetLabel } from "@/lib/utils/weeks";
 import Image from "next/image";
@@ -11,6 +11,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import AuxiliaryFilter from "@/components/public/AuxiliaryFilter";
 import CookieConsentBanner from "@/components/public/CookieConsentBanner";
+import ProgramView from "@/components/programs/ProgramView";
 
 export const revalidate = 60;
 
@@ -40,11 +41,12 @@ export default async function WardPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<{ week?: string; tab?: string }>;
 }) {
   const { slug } = await params;
-  const { week } = await searchParams;
+  const { week, tab } = await searchParams;
   const weekOffset = parseInt(week ?? "0", 10) || 0;
+  const activeTab = tab === "programs" ? "programs" : "announcements";
 
   const [org] = await db
     .select()
@@ -112,6 +114,40 @@ export default async function WardPage({
     {}
   );
 
+  // Fetch published programs for the week
+  const weekPrograms = await db
+    .select()
+    .from(programs)
+    .where(
+      and(
+        eq(programs.organizationId, org.id),
+        eq(programs.status, "published"),
+        between(programs.date, weekStartStr, weekEndStr)
+      )
+    )
+    .orderBy(asc(programs.date), asc(programs.createdAt));
+
+  const programIds = weekPrograms.map((p) => p.id);
+  const allProgramItems =
+    programIds.length > 0
+      ? await db
+          .select()
+          .from(programItems)
+          .where(inArray(programItems.programId, programIds))
+          .orderBy(asc(programItems.sortOrder))
+      : [];
+
+  const itemsByProgram = allProgramItems.reduce<Record<string, typeof allProgramItems>>(
+    (acc, item) => {
+      if (!acc[item.programId]) acc[item.programId] = [];
+      acc[item.programId].push(item);
+      return acc;
+    },
+    {}
+  );
+
+  const hasPrograms = weekPrograms.length > 0;
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Ward header */}
@@ -174,16 +210,64 @@ export default async function WardPage({
           )}
         </div>
 
-        {/* Announcements with auxiliary filtering */}
-        <AuxiliaryFilter
-          announcements={weekAnnouncements.map((a) => ({
-            ...a,
-            auxiliaries: auxByAnnouncement[a.id] ?? [],
-            attachments: attsByAnnouncement[a.id] ?? [],
-          }))}
-          wardSlug={slug}
-          primaryColor={org.primaryColor}
-        />
+        {/* Tab switcher — only shown when programs exist for this week */}
+        {hasPrograms && (
+          <div className="flex gap-1 border-b">
+            <Link
+              href={`/ward/${slug}?week=${weekOffset}`}
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                activeTab === "announcements"
+                  ? "border-current text-stone-900"
+                  : "border-transparent text-stone-500 hover:text-stone-700"
+              }`}
+              style={activeTab === "announcements" ? { borderColor: org.primaryColor } : undefined}
+            >
+              Announcements
+            </Link>
+            <Link
+              href={`/ward/${slug}?week=${weekOffset}&tab=programs`}
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                activeTab === "programs"
+                  ? "border-current text-stone-900"
+                  : "border-transparent text-stone-500 hover:text-stone-700"
+              }`}
+              style={activeTab === "programs" ? { borderColor: org.primaryColor } : undefined}
+            >
+              Programs
+              <span className="ml-1.5 text-xs bg-stone-100 text-stone-600 rounded-full px-1.5 py-0.5">
+                {weekPrograms.length}
+              </span>
+            </Link>
+          </div>
+        )}
+
+        {/* Announcements tab */}
+        {activeTab === "announcements" && (
+          <AuxiliaryFilter
+            announcements={weekAnnouncements.map((a) => ({
+              ...a,
+              auxiliaries: auxByAnnouncement[a.id] ?? [],
+              attachments: attsByAnnouncement[a.id] ?? [],
+            }))}
+            wardSlug={slug}
+            primaryColor={org.primaryColor}
+          />
+        )}
+
+        {/* Programs tab */}
+        {activeTab === "programs" && (
+          <div className="space-y-6">
+            {weekPrograms.map((program) => (
+              <ProgramView
+                key={program.id}
+                program={program}
+                items={itemsByProgram[program.id] ?? []}
+                wardName={org.name}
+                primaryColor={org.primaryColor}
+              />
+            ))}
+          </div>
+        )}
       </main>
 
       <footer className="border-t mt-12 py-6 text-center text-sm text-muted-foreground">

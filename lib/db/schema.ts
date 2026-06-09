@@ -250,6 +250,84 @@ export const announcementHistoryRelations = relations(announcementHistory, ({ on
   }),
 }));
 
+// ─── Programs ─────────────────────────────────────────────────────────────────
+
+export const programTypeEnum = pgEnum("program_type", [
+  "sacrament_meeting",
+  "baptism",
+  "stake_conference",
+  "ward_conference",
+  "seminary_graduation",
+  "funeral",
+  "other",
+]);
+
+export const programStatusEnum = pgEnum("program_status", ["draft", "published"]);
+
+export const programItemTypeEnum = pgEnum("program_item_type", [
+  "hymn",
+  "prayer",
+  "speaker",
+  "musical_number",
+  "sacrament",
+  "text",
+  "divider",
+  "scripture",
+]);
+
+export const programs = pgTable("programs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  type: programTypeEnum("type").notNull(),
+  title: text("title"),
+  sessionLabel: text("session_label"),
+  presiding: text("presiding"),
+  conducting: text("conducting"),
+  theme: text("theme"),
+  icon: text("icon"),
+  status: programStatusEnum("status").notNull().default("draft"),
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const programItems = pgTable("program_items", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  programId: uuid("program_id")
+    .notNull()
+    .references(() => programs.id, { onDelete: "cascade" }),
+  sortOrder: integer("sort_order").notNull(),
+  type: programItemTypeEnum("type").notNull(),
+  label: text("label"),
+  detail: text("detail"),
+  secondaryDetail: text("secondary_detail"),
+  isCongregalional: boolean("is_congregational").notNull().default(false),
+});
+
+export const programsRelations = relations(programs, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [programs.organizationId],
+    references: [organizations.id],
+  }),
+  createdByUser: one(users, {
+    fields: [programs.createdBy],
+    references: [users.id],
+  }),
+  items: many(programItems),
+}));
+
+export const programItemsRelations = relations(programItems, ({ one }) => ({
+  program: one(programs, {
+    fields: [programItems.programId],
+    references: [programs.id],
+  }),
+}));
+
 // ─── Convenience types ────────────────────────────────────────────────────────
 
 export type Organization = typeof organizations.$inferSelect;
@@ -261,3 +339,8 @@ export type AnnouncementHistoryEntry = typeof announcementHistory.$inferSelect;
 export type UserOrganizationRole = typeof userOrganizationRoles.$inferSelect;
 export type OrgRole = "ward_leader" | "announcement_poster" | "stake_leader";
 export type AnnouncementStatus = "draft" | "submitted" | "approved" | "revision_requested";
+export type Program = typeof programs.$inferSelect;
+export type ProgramItem = typeof programItems.$inferSelect;
+export type ProgramType = "sacrament_meeting" | "baptism" | "stake_conference" | "ward_conference" | "seminary_graduation" | "funeral" | "other";
+export type ProgramStatus = "draft" | "published";
+export type ProgramItemType = "hymn" | "prayer" | "speaker" | "musical_number" | "sacrament" | "text" | "divider" | "scripture";

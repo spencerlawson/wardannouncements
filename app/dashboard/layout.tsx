@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Megaphone, Settings, Users, LayoutDashboard, Shield, ChevronDown } from "lucide-react";
+import { Megaphone, Settings, Users, LayoutDashboard, Shield, ChevronDown, BookOpen } from "lucide-react";
 
 export default async function DashboardLayout({
   children,
@@ -70,6 +70,14 @@ export default async function DashboardLayout({
                 Announcements
               </Button>
             </Link>
+            {isLeader && (
+              <Link href={`/dashboard/programs${leaderOrgs.length === 1 ? `?org=${leaderOrgs[0].orgId}` : ""}`}>
+                <Button variant="ghost" size="sm" className="gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                  <BookOpen className="h-4 w-4" />
+                  Programs
+                </Button>
+              </Link>
+            )}
             {isLeader && leaderOrgs.length === 1 && (
               <>
                 <Link href={`/dashboard/users?org=${leaderOrgs[0].orgId}`}>
