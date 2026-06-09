@@ -7,6 +7,22 @@ import { PROGRAM_TYPE_LABELS } from "@/lib/constants/programs";
 import { ProgramIcon } from "./ProgramIcons";
 import type { Program, ProgramItem } from "@/lib/db/schema";
 
+// Extracts a hymn title from strings like "85 – How Firm a Foundation" or "How Firm a Foundation"
+// and returns the Gospel Library URL, or null if no title is recognizable.
+function hymnLibraryUrl(detail: string | null): string | null {
+  if (!detail) return null;
+  // Strip leading number + separators (e.g. "85", "85 –", "#85 -")
+  const title = detail.replace(/^#?\d+\s*[-–—]?\s*/, "").trim();
+  if (!title) return null;
+  const slug = title
+    .toLowerCase()
+    .replace(/['']/g, "")          // remove apostrophes
+    .replace(/[^a-z0-9\s-]/g, "") // strip other punctuation
+    .trim()
+    .replace(/\s+/g, "-");
+  return `https://www.churchofjesuschrist.org/study/manual/hymns/${slug}?lang=eng`;
+}
+
 interface ProgramViewProps {
   program: Program;
   items: ProgramItem[];
@@ -199,13 +215,23 @@ function ItemRow({ item }: { item: ProgramItem }) {
   }
 
   if (item.type === "hymn") {
-    return (
-      <div className="py-1.5 text-center">
+    const url = hymnLibraryUrl(item.detail);
+    const inner = (
+      <>
         <span className="text-sm font-medium text-stone-700">{item.label || "Hymn"}</span>
         {item.detail && <span className="text-sm text-stone-500"> — {item.detail}</span>}
         {item.isCongregalional && (
           <span className="ml-1.5 text-[11px] text-stone-400">(Congregation)</span>
         )}
+      </>
+    );
+    return (
+      <div className="py-1.5 text-center">
+        {url ? (
+          <a href={url} target="_blank" rel="noopener noreferrer" className="hover:underline underline-offset-2">
+            {inner}
+          </a>
+        ) : inner}
       </div>
     );
   }
