@@ -5,8 +5,7 @@ import { userOrganizationRoles, organizations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import WardSettingsForm from "@/components/ward/WardSettingsForm";
 import OrgSwitcher from "@/components/OrgSwitcher";
-import { Button } from "@/components/ui/button";
-import { QrCode, Download } from "lucide-react";
+import QRDownloadButtons from "@/components/ward/QRDownloadButtons";
 
 export default async function SettingsPage({
   searchParams,
@@ -46,13 +45,7 @@ export default async function SettingsPage({
             <OrgSwitcher orgs={leaderOrgs} currentOrgId={ward.id} />
           )}
         </div>
-        <a href={`/api/qrcode/${ward.id}`} download>
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <QrCode className="h-4 w-4" />
-            <Download className="h-4 w-4" />
-            QR Code
-          </Button>
-        </a>
+        <QRDownloadButtons orgId={ward.id} wardSlug={ward.slug} />
       </div>
       <WardSettingsForm ward={ward} />
     </div>

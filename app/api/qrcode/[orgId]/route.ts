@@ -31,6 +31,16 @@ export async function GET(
   const wardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/ward/${org.slug}`;
   const buffer = await generateQRCodeBuffer(wardUrl);
 
+  const format = new URL(_req.url).searchParams.get("format");
+  if (format === "dataurl") {
+    return NextResponse.json({
+      dataUrl: `data:image/png;base64,${buffer.toString("base64")}`,
+      wardUrl,
+      wardName: org.name,
+      primaryColor: org.primaryColor,
+    });
+  }
+
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "image/png",
