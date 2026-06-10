@@ -289,6 +289,7 @@ export const programs = pgTable("programs", {
   theme: text("theme"),
   icon: text("icon"),
   status: programStatusEnum("status").notNull().default("draft"),
+  isActive: boolean("is_active").notNull().default(true),
   createdBy: text("created_by")
     .notNull()
     .references(() => users.id),

@@ -12,6 +12,7 @@ import type { Metadata } from "next";
 import AuxiliaryFilter from "@/components/public/AuxiliaryFilter";
 import CookieConsentBanner from "@/components/public/CookieConsentBanner";
 import ProgramView from "@/components/programs/ProgramView";
+import { PROGRAM_TYPE_LABELS } from "@/lib/constants/programs";
 
 export const revalidate = 60;
 
@@ -41,10 +42,10 @@ export default async function WardPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ week?: string; tab?: string }>;
+  searchParams: Promise<{ week?: string; tab?: string; program?: string }>;
 }) {
   const { slug } = await params;
-  const { week, tab } = await searchParams;
+  const { week, tab, program: programParam } = await searchParams;
   const weekOffset = parseInt(week ?? "0", 10) || 0;
   const activeTab = tab === "programs" ? "programs" : "announcements";
 
@@ -114,7 +115,7 @@ export default async function WardPage({
     {}
   );
 
-  // Fetch published programs for the week
+  // Fetch published, active programs for the week
   const weekPrograms = await db
     .select()
     .from(programs)
@@ -122,6 +123,7 @@ export default async function WardPage({
       and(
         eq(programs.organizationId, org.id),
         eq(programs.status, "published"),
+        eq(programs.isActive, true),
         between(programs.date, weekStartStr, weekEndStr)
       )
     )
@@ -147,6 +149,8 @@ export default async function WardPage({
   );
 
   const hasPrograms = weekPrograms.length > 0;
+  const selectedProgram =
+    weekPrograms.find((p) => p.id === programParam) ?? weekPrograms[0];
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -255,17 +259,38 @@ export default async function WardPage({
         )}
 
         {/* Programs tab */}
-        {activeTab === "programs" && (
-          <div className="space-y-6">
-            {weekPrograms.map((program) => (
-              <ProgramView
-                key={program.id}
-                program={program}
-                items={itemsByProgram[program.id] ?? []}
-                wardName={org.name}
-                primaryColor={org.primaryColor}
-              />
-            ))}
+        {activeTab === "programs" && selectedProgram && (
+          <div className="space-y-4">
+            {weekPrograms.length > 1 && (
+              <div className="flex flex-wrap gap-2">
+                {weekPrograms.map((program) => {
+                  const label = program.title || PROGRAM_TYPE_LABELS[program.type];
+                  const isSelected = program.id === selectedProgram.id;
+                  return (
+                    <Link
+                      key={program.id}
+                      href={`/ward/${slug}?week=${weekOffset}&tab=programs&program=${program.id}`}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-all border"
+                      style={
+                        isSelected
+                          ? { backgroundColor: org.primaryColor, borderColor: org.primaryColor, color: "#fff" }
+                          : { backgroundColor: "transparent", borderColor: org.primaryColor, color: org.primaryColor }
+                      }
+                    >
+                      {label}
+                      {program.sessionLabel && ` · ${program.sessionLabel}`}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            <ProgramView
+              program={selectedProgram}
+              items={itemsByProgram[selectedProgram.id] ?? []}
+              wardName={org.name}
+              primaryColor={org.primaryColor}
+            />
           </div>
         )}
       </main>

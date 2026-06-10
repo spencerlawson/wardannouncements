@@ -132,6 +132,7 @@ export default function ProgramBuilder({
   const [conducting, setConducting] = useState(existing?.conducting ?? "");
   const [theme, setTheme] = useState(existing?.theme ?? "");
   const [icon, setIcon] = useState<string | null>(existing?.icon ?? null);
+  const [isActive, setIsActive] = useState(existing?.isActive ?? true);
   const [items, setItems] = useState<DraftItem[]>(
     existing && existingItems ? existingToItems(existingItems) : templateToItems("sacrament_meeting")
   );
@@ -214,6 +215,7 @@ export default function ProgramBuilder({
       theme: theme || null,
       icon: icon || null,
       status,
+      isActive,
       items: items.map((item) => ({
         type: item.type,
         label: item.label || null,
@@ -378,6 +380,24 @@ export default function ProgramBuilder({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Active toggle */}
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 text-sm text-stone-700 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="rounded"
+            />
+            Show on public ward page
+          </label>
+          <p className="text-xs text-muted-foreground">
+            If a published program isn&apos;t active, it won&apos;t appear on the ward&apos;s public page.
+            Use this to prepare an additional program (e.g. a later meeting the same day)
+            without cluttering the page until you&apos;re ready to display it.
+          </p>
         </div>
       </div>
 

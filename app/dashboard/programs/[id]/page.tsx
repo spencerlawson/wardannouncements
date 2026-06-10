@@ -76,9 +76,16 @@ export default async function ProgramEditPage({
         existingItems={items}
       />
 
-      {program.status === "published" && org && (
+      {org && (
         <div id="preview" className="space-y-3 pt-4 border-t">
-          <h2 className="text-lg font-semibold text-stone-700">Preview</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-stone-700">Preview</h2>
+            {program.status === "draft" && (
+              <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                Draft — not visible on public page
+              </span>
+            )}
+          </div>
           <ProgramView
             program={program}
             items={items}

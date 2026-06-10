@@ -28,6 +28,7 @@ type ProgramInput = {
   theme: string | null;
   icon: string | null;
   status: "draft" | "published";
+  isActive: boolean;
   items: ItemInput[];
 };
 
@@ -55,6 +56,7 @@ export async function createProgram(input: ProgramInput) {
       theme: input.theme || null,
       icon: input.icon || null,
       status: input.status,
+      isActive: input.isActive,
       createdBy: session.user.id,
     })
     .returning();
@@ -102,6 +104,7 @@ export async function updateProgram(programId: string, input: ProgramInput) {
       theme: input.theme || null,
       icon: input.icon || null,
       status: input.status,
+      isActive: input.isActive,
       updatedAt: new Date(),
     })
     .where(eq(programs.id, programId));

@@ -93,6 +93,11 @@ export default async function ProgramsPage({
                 </p>
               </Link>
               <div className="flex items-center gap-2 shrink-0">
+                {p.status === "published" && !p.isActive && (
+                  <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
+                    Hidden
+                  </Badge>
+                )}
                 <Badge variant={p.status === "published" ? "default" : "secondary"}>
                   {p.status === "published" ? "Published" : "Draft"}
                 </Badge>
